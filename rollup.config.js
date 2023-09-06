@@ -18,7 +18,7 @@ export default {
       inlineDynamicImports: true
     }
   ],
-  external: ['reflect-metadata'],
+  external: ['@rolster/typescript-utils'],
   plugins: [
     resolve(),
     commonjs(),
