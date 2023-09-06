@@ -5,7 +5,7 @@ Container package of basic classes to implement a clean architecture.
 ## Installation
 
 ```
-npm i @rolster/hexagonal
+npm i @rolster/typescript-hexagonal
 ```
 
 ## Configuration
