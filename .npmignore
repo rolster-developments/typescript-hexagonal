@@ -10,6 +10,7 @@ test
 .npmrc
 .prettierignore
 .prettierrc
+jest.config.json
 package-lock.json
 rollup.config.json
 tsconfig.json
