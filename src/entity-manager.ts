@@ -38,7 +38,7 @@ export abstract class EntityManager {
   abstract dispose(): void;
 }
 
-export class XofttionEntityManager implements EntityManager {
+export class RolsterEntityManager implements EntityManager {
   private relations: Map<string, BaseModel>;
 
   private links: BaseEntityLink[] = [];

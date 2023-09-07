@@ -1,7 +1,7 @@
 import { Entity } from './entity';
 import { BaseModel, ModelUpdated } from './model';
 
-export type ModelDirty = { [key: string]: any };
+export type ModelDirty = Record<string, any>;
 
 export abstract class EntitySync<E extends Entity, M extends BaseModel> {
   private firstStatus: ModelDirty;
