@@ -1,4 +1,4 @@
-import { Optional } from '@rolster/typescript-utils';
+import { Optional } from '@rolster/helpers-advanced';
 import { Entity } from './entity';
 
 export abstract class Repository<T extends Entity> {

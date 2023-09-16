@@ -11,7 +11,7 @@ export abstract class EntitySync<E extends Entity, M extends BaseModel> {
     public readonly model: M,
     public readonly bindable = true
   ) {
-    this.firstStatus = this.mapModel(model);
+    this.firstStatus = this.mapperModel(model);
   }
 
   public abstract sync(): void;
@@ -19,10 +19,10 @@ export abstract class EntitySync<E extends Entity, M extends BaseModel> {
   public verify(): Undefined<ModelDirty> {
     this.sync();
 
-    return this.getDirty();
+    return this.createDirty();
   }
 
-  private mapModel(model: M): ModelDirty {
+  private mapperModel(model: M): ModelDirty {
     const dirty: ModelDirty = {};
 
     Object.keys(model).forEach((key) => {
@@ -32,8 +32,8 @@ export abstract class EntitySync<E extends Entity, M extends BaseModel> {
     return dirty;
   }
 
-  private getDirty(): Undefined<ModelDirty> {
-    const currentStatus = this.mapModel(this.model);
+  private createDirty(): Undefined<ModelDirty> {
+    const currentStatus = this.mapperModel(this.model);
 
     const modelDirty: ModelDirty = {};
 

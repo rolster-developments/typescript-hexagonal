@@ -1,4 +1,4 @@
-import { Optional, promisesZip } from '@rolster/typescript-utils';
+import { Optional, fromPromise } from '@rolster/helpers-advanced';
 import { EntityDataSource } from './datasource';
 import { EntityLink } from './entity-link';
 import { EntitySync, ModelDirty } from './entity-sync';
@@ -32,8 +32,6 @@ export abstract class EntityManager {
   abstract select<T extends BaseModel>(entity: Entity): Optional<T>;
 
   abstract flush(): Promise<void>;
-
-  abstract flushAsync(): Promise<void>;
 
   abstract dispose(): void;
 }
@@ -101,22 +99,7 @@ export class RolsterEntityManager implements EntityManager {
     );
   }
 
-  public flush(): Promise<void> {
-    return promisesZip([
-      () => this.persistAll(),
-      () => this.updateAll(),
-      () => this.syncAll(),
-      () => this.hiddenAll(),
-      () => this.destroyAll(),
-      () => this.procedureAll()
-    ])
-      .then(() => Promise.resolve())
-      .finally(() => {
-        this.dispose();
-      });
-  }
-
-  public async flushAsync(): Promise<void> {
+  public async flush(): Promise<void> {
     await this.persistAll();
     await this.updateAll();
     await this.syncAll();
@@ -139,57 +122,67 @@ export class RolsterEntityManager implements EntityManager {
   }
 
   private persistAll(): Promise<void[]> {
+    const { links, source } = this;
+
     return Promise.all(
-      this.links.map((link) => {
-        const result = link.createModel(this);
+      links.map((link) =>
+        fromPromise(link.createModel(this)).then((model) => {
+          const { bindable, entity } = link;
 
-        return (result instanceof Promise ? result : Promise.resolve(result)).then(
-          (model) => {
-            const { bindable, entity } = link;
-
-            if (bindable) {
-              this.relation(entity, model);
-            }
-
-            return this.source.insert(model);
+          if (bindable) {
+            this.relation(entity, model);
           }
-        );
-      })
+
+          return source.insert(model);
+        })
+      )
     );
   }
 
   private updateAll(): Promise<void[]> {
-    return Promise.all(this.updates.map(({ model }) => this.source.update(model)));
+    const { source, updates } = this;
+
+    return Promise.all(updates.map(({ model }) => source.update(model)));
   }
 
   private syncAll(): Promise<void[]> {
+    const { destroys, source, syncs } = this;
+
     return Promise.all(
-      this.syncs
-        .filter(({ model }) => !this.destroys.includes(model))
+      syncs
+        .filter(({ model }) => !destroys.includes(model))
         .reduce((syncs: SyncPromise[], sync) => {
           const dirty = sync.verify();
 
           if (dirty) {
-            syncs.push({ model: sync.model, dirty });
+            const { model } = sync;
+
+            syncs.push({ model, dirty });
           }
 
           return syncs;
         }, [])
-        .map(({ model, dirty }) => this.source.update(model, dirty))
+        .map(({ model, dirty }) => source.update(model, dirty))
     );
   }
 
   private destroyAll(): Promise<void[]> {
-    return Promise.all(this.destroys.map((destroy) => this.source.delete(destroy)));
+    const { destroys, source } = this;
+
+    return Promise.all(destroys.map((destroy) => source.delete(destroy)));
   }
 
   private hiddenAll(): Promise<void[]> {
-    return Promise.all(this.hiddens.map((hidden) => this.source.hidden(hidden)));
+    const { hiddens, source } = this;
+
+    return Promise.all(hiddens.map((hidden) => source.hidden(hidden)));
   }
 
   private procedureAll(): Promise<void[]> {
+    const { procedures, source } = this;
+
     return Promise.all(
-      this.procedures.map((procedure) => this.source.procedure(procedure))
+      procedures.map((procedure) => source.procedure(procedure))
     );
   }
 }

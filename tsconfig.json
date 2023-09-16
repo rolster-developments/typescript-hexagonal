@@ -22,7 +22,7 @@
     "target": "es2020",
     "typeRoots": ["node_modules/@types/**/*.d.ts", "src/**/*.d.ts"]
   },
-  "files": ["node_modules/@rolster/typescript-types/index.d.ts"],
+  "files": ["node_modules/@rolster/types/index.d.ts"],
   "include": ["src"],
   "exclude": ["**/*.spec.ts", "**/*.test.ts"],
   "ts-node": {

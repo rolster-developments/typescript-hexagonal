@@ -1,20 +1,20 @@
-# Rolster Typescript Hexagonal
+# Rolster Vinegar
 
 Container package of basic classes to implement a clean architecture.
 
 ## Installation
 
 ```
-npm i @rolster/typescript-hexagonal
+npm i @rolster/vinegar
 ```
 
 ## Configuration
 
-You must install the `@rolster/typescript-types` to define package data types, which are configured by adding them to the `files` property of the `tsconfig.json` file.
+You must install the `@rolster/types` to define package data types, which are configured by adding them to the `files` property of the `tsconfig.json` file.
 
 ```json
 {
-  "files": ["node_modules/@rolster/typescript-types/index.d.ts"]
+  "files": ["node_modules/@rolster/types/index.d.ts"]
 }
 ```
 
