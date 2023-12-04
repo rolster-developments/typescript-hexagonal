@@ -20,7 +20,7 @@
   "scripts": {
     "prettier": "prettier . --write",
     "clean": "rimraf ./dist",
-    "build": "npm run clean && tsc -p tsconfig.json && rollup -c rollup.config.js",
+    "build": "npm run clean && tsc -p tsconfig.app.json && rollup -c rollup.config.js",
     "test": "jest --coverage",
     "test:watch": "jest --coverage --watch",
     "prepublishOnly": "npm run build"
