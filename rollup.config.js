@@ -35,6 +35,4 @@ const rollupTs = (file) => {
   };
 };
 
-const exports = ['index'];
-
-export default [...exports.map((file) => rollupTs(file))];
+export default [rollupTs('index')];

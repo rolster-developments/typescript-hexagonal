@@ -29,7 +29,7 @@ export abstract class EntityManager {
 
   abstract relation(entity: Entity, model: BaseModel): void;
 
-  abstract link(entity: Entity, model: BaseModel): Entity;
+  abstract link<E extends Entity>(entity: E, model: BaseModel): E;
 
   abstract select<T extends BaseModel>(entity: Entity): Optional<T>;
 
@@ -95,7 +95,7 @@ export class RolsterEntityManager implements EntityManager {
     this.relations.set(uuid, model);
   }
 
-  public link(entity: Entity, model: BaseModel): Entity {
+  public link<E extends Entity>(entity: E, model: BaseModel): E {
     this.relation(entity, model);
 
     return entity;
