@@ -1,4 +1,4 @@
-import { Optional, fromPromise } from '@rolster/helpers-advanced';
+import { Optional, fromPromise } from '@rolster/commons';
 import { EntityDataSource } from './datasource';
 import { EntityLink } from './entity-link';
 import { EntitySync, ModelDirty } from './entity-sync';

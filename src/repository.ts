@@ -1,4 +1,4 @@
-import { Optional } from '@rolster/helpers-advanced';
+import { Optional } from '@rolster/commons';
 import { Entity } from './entity';
 
 export abstract class Repository<T extends Entity> {
