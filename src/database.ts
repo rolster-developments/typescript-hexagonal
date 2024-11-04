@@ -1,7 +1,7 @@
-export abstract class EntityDatabase {
+export abstract class AbstractEntityDatabase {
   abstract connect(): Promise<void>;
 
-  abstract disconnect(full?: boolean): Promise<void>;
+  abstract disconnect(all?: boolean): Promise<void>;
 
   abstract transaction(): Promise<void>;
 

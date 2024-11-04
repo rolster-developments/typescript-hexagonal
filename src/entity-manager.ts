@@ -1,67 +1,70 @@
 import { Optional, fromPromise } from '@rolster/commons';
-import { EntityDataSource } from './datasource';
-import { EntityLink } from './entity-link';
-import { EntitySync, ModelDirty } from './entity-sync';
-import { EntityUpdate } from './entity-update';
-import { Entity } from './entity';
-import { BaseModel, ModelHidden } from './model';
-import { Procedure } from './procedure';
+import { AbstractEntityDataSource } from './datasource';
+import { EntityLink, EntitySync, EntityUpdate } from './entity';
+import {
+  AbstractModel,
+  DirtyModel,
+  AbstractEntity,
+  HiddenModel,
+  QueryEntityManager
+} from './types';
+import { AbstractProcedure } from './procedure';
 
-type BaseEntityLink = EntityLink<Entity, BaseModel>;
-type BaseEntityUpdate = EntityUpdate<Entity, BaseModel>;
-type BaseEntitySync = EntitySync<Entity, BaseModel>;
+type ManagerLink = EntityLink<AbstractEntity, AbstractModel>;
+type ManagerUpdate = EntityUpdate<AbstractEntity, AbstractModel>;
+type ManagerSync = EntitySync<AbstractEntity, AbstractModel>;
+type SyncPromise = [AbstractModel, DirtyModel];
 
-type SyncPromise = {
-  dirty: ModelDirty;
-  model: BaseModel;
-};
+function modelIsHidden(model: any): model is HiddenModel {
+  return typeof model === 'object' && 'hidden' in model && 'hiddenAt' in model;
+}
 
-export abstract class EntityManager {
-  abstract persist(link: BaseEntityLink): void;
+export abstract class AbstractEntityManager implements QueryEntityManager {
+  abstract persist(link: ManagerLink): void;
 
-  abstract update(update: BaseEntityUpdate): void;
+  abstract update(update: ManagerUpdate): void;
 
-  abstract sync(sync: BaseEntitySync): void;
+  abstract sync(sync: ManagerSync): void;
 
-  abstract destroy(entity: Entity): void;
+  abstract destroy(entity: AbstractEntity): void;
 
-  abstract procedure(procedure: Procedure): void;
+  abstract procedure(procedure: AbstractProcedure): void;
 
-  abstract relation(entity: Entity, model: BaseModel): void;
+  abstract relation(entity: AbstractEntity, model: AbstractModel): void;
 
-  abstract link<E extends Entity>(entity: E, model: BaseModel): E;
+  abstract link<E extends AbstractEntity>(entity: E, model: AbstractModel): E;
 
-  abstract select<T extends BaseModel>(entity: Entity): Optional<T>;
+  abstract select<T extends AbstractModel>(entity: AbstractEntity): Optional<T>;
 
   abstract flush(): Promise<void>;
 
   abstract dispose(): void;
 }
 
-export class RolsterEntityManager implements EntityManager {
-  private relations: Map<string, BaseModel>;
+export class EntityManager implements AbstractEntityManager {
+  private relations: Map<string, AbstractModel>;
 
-  private links: BaseEntityLink[] = [];
+  private links: ManagerLink[] = [];
 
-  private updates: BaseEntityUpdate[] = [];
+  private updates: ManagerUpdate[] = [];
 
-  private syncs: BaseEntitySync[] = [];
+  private syncs: ManagerSync[] = [];
 
-  private destroys: BaseModel[] = [];
+  private destroys: AbstractModel[] = [];
 
-  private hiddens: ModelHidden[] = [];
+  private hiddens: HiddenModel[] = [];
 
-  private procedures: Procedure[] = [];
+  private procedures: AbstractProcedure[] = [];
 
-  constructor(private source: EntityDataSource) {
-    this.relations = new Map<string, BaseModel>();
+  constructor(private source: AbstractEntityDataSource) {
+    this.relations = new Map<string, AbstractModel>();
   }
 
-  public persist(link: BaseEntityLink): void {
+  public persist(link: ManagerLink): void {
     this.links.push(link);
   }
 
-  public update(update: BaseEntityUpdate): void {
+  public update(update: ManagerUpdate): void {
     const { bindable, entity, model } = update;
 
     if (bindable) {
@@ -71,7 +74,7 @@ export class RolsterEntityManager implements EntityManager {
     this.updates.push(update);
   }
 
-  public sync(sync: BaseEntitySync): void {
+  public sync(sync: ManagerSync): void {
     const { bindable, entity, model } = sync;
 
     if (bindable) {
@@ -81,29 +84,31 @@ export class RolsterEntityManager implements EntityManager {
     this.syncs.push(sync);
   }
 
-  public destroy(entity: Entity): void {
+  public destroy(entity: AbstractEntity): void {
     this.select(entity).present((model) => {
-      isHidden(model) ? this.hiddens.push(model) : this.destroys.push(model);
+      modelIsHidden(model)
+        ? this.hiddens.push(model)
+        : this.destroys.push(model);
     });
   }
 
-  public procedure(procedure: Procedure): void {
+  public procedure(procedure: AbstractProcedure): void {
     this.procedures.push(procedure);
   }
 
-  public relation({ uuid }: Entity, model: BaseModel): void {
+  public relation({ uuid }: AbstractEntity, model: AbstractModel): void {
     this.relations.set(uuid, model);
   }
 
-  public link<E extends Entity>(entity: E, model: BaseModel): E {
+  public link<E extends AbstractEntity>(entity: E, model: AbstractModel): E {
     this.relation(entity, model);
 
     return entity;
   }
 
-  public select<T extends BaseModel>({ uuid }: Entity): Optional<T> {
+  public select<M extends AbstractModel>({ uuid }: AbstractEntity): Optional<M> {
     return Optional.build(
-      this.relations.has(uuid) ? (this.relations.get(uuid) as T) : undefined
+      this.relations.has(uuid) ? (this.relations.get(uuid) as M) : undefined
     );
   }
 
@@ -134,7 +139,7 @@ export class RolsterEntityManager implements EntityManager {
 
     return Promise.all(
       links.map((link) =>
-        fromPromise(link.createModel(this)).then((model) => {
+        fromPromise(link.create(this)).then((model) => {
           const { bindable, entity } = link;
 
           if (bindable) {
@@ -165,12 +170,12 @@ export class RolsterEntityManager implements EntityManager {
           if (dirty) {
             const { model } = sync;
 
-            syncs.push({ model, dirty });
+            syncs.push([model, dirty]);
           }
 
           return syncs;
         }, [])
-        .map(({ model, dirty }) => source.update(model, dirty))
+        .map(([model, dirty]) => source.update(model, dirty))
     );
   }
 
@@ -193,8 +198,4 @@ export class RolsterEntityManager implements EntityManager {
       procedures.map((procedure) => source.procedure(procedure))
     );
   }
-}
-
-function isHidden(model: any): model is ModelHidden {
-  return 'hidden' in model && 'hiddenAt' in model;
 }

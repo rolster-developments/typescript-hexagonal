@@ -1,15 +1,14 @@
-import { ModelDirty } from './entity-sync';
-import { Procedure } from './procedure';
-import { BaseModel, ModelHidden } from './model';
+import { AbstractProcedure } from './procedure';
+import { AbstractModel, DirtyModel, HiddenModel } from './types';
 
-export abstract class EntityDataSource {
-  abstract insert(model: BaseModel): Promise<void>;
+export abstract class AbstractEntityDataSource {
+  abstract insert(model: AbstractModel): Promise<void>;
 
-  abstract update(model: BaseModel, dirty?: ModelDirty): Promise<void>;
+  abstract update(model: AbstractModel, dirty?: DirtyModel): Promise<void>;
 
-  abstract delete(model: BaseModel): Promise<void>;
+  abstract delete(model: AbstractModel): Promise<void>;
 
-  abstract hidden(model: ModelHidden): Promise<void>;
+  abstract hidden(model: HiddenModel): Promise<void>;
 
-  abstract procedure(procedure: Procedure): Promise<void>;
+  abstract procedure(procedure: AbstractProcedure): Promise<void>;
 }

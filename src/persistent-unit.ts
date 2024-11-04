@@ -1,3 +1,3 @@
-export abstract class PersistentUnit {
+export abstract class AbstractPersistentUnit {
   abstract flush(): Promise<void>;
 }
