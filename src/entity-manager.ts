@@ -5,7 +5,7 @@ import {
   AbstractModel,
   DirtyModel,
   AbstractEntity,
-  HiddenModel,
+  ModelHideable,
   QueryEntityManager
 } from './types';
 import { AbstractProcedure } from './procedure';
@@ -15,7 +15,7 @@ type ManagerUpdate = EntityUpdate<AbstractEntity, AbstractModel>;
 type ManagerSync = EntitySync<AbstractEntity, AbstractModel>;
 type SyncPromise = [AbstractModel, DirtyModel];
 
-function modelIsHidden(model: any): model is HiddenModel {
+function modelIsHidden(model: any): model is ModelHideable {
   return typeof model === 'object' && 'hidden' in model && 'hiddenAt' in model;
 }
 
@@ -52,7 +52,7 @@ export class EntityManager implements AbstractEntityManager {
 
   private destroys: AbstractModel[] = [];
 
-  private hiddens: HiddenModel[] = [];
+  private hiddens: ModelHideable[] = [];
 
   private procedures: AbstractProcedure[] = [];
 

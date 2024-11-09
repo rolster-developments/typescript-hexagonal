@@ -2,11 +2,11 @@ import {
   AbstractEntity,
   AbstractModel,
   DirtyModel,
-  QueryEntityManager,
-  UpdateModel
+  ModelEditable,
+  QueryEntityManager
 } from './types';
 
-function modelIsUpdated(model: any): model is UpdateModel {
+function modelIsEditable(model: any): model is ModelEditable {
   return typeof model === 'object' && 'updatedAt' in model;
 }
 
@@ -83,7 +83,7 @@ export abstract class EntitySync<
 
     const requiredUpdate = Object.keys(finalDirty).length > 0;
 
-    if (requiredUpdate && modelIsUpdated(this.model)) {
+    if (requiredUpdate && modelIsEditable(this.model)) {
       finalDirty['updatedAt'] = new Date();
     }
 

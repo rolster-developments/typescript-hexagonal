@@ -6,16 +6,16 @@ export interface AbstractModel {
   id: number;
 }
 
-export interface UpdateModel extends AbstractModel {
+export interface ModelEditable extends AbstractModel {
   updatedAt?: Date;
 }
 
-export interface HiddenModel extends AbstractModel {
+export interface ModelHideable extends AbstractModel {
   hidden: boolean;
   hiddenAt?: Date;
 }
 
-export interface Model extends HiddenModel {
+export interface Model extends ModelHideable {
   updatedAt?: Date;
 }
 

@@ -1,5 +1,5 @@
 import { AbstractProcedure } from './procedure';
-import { AbstractModel, DirtyModel, HiddenModel } from './types';
+import { AbstractModel, DirtyModel, ModelHideable } from './types';
 
 export abstract class AbstractEntityDataSource {
   abstract insert(model: AbstractModel): Promise<void>;
@@ -8,7 +8,7 @@ export abstract class AbstractEntityDataSource {
 
   abstract delete(model: AbstractModel): Promise<void>;
 
-  abstract hidden(model: HiddenModel): Promise<void>;
+  abstract hidden(model: ModelHideable): Promise<void>;
 
   abstract procedure(procedure: AbstractProcedure): Promise<void>;
 }
