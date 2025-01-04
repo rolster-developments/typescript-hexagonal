@@ -6,7 +6,7 @@ import {
   QueryEntityManager
 } from './types';
 
-function modelIsEditable(model: any): model is ModelEditable {
+function itIsModelEditable(model: any): model is ModelEditable {
   return typeof model === 'object' && 'updatedAt' in model;
 }
 
@@ -14,7 +14,7 @@ export class Entity implements AbstractEntity {
   constructor(public readonly uuid: string) {}
 }
 
-export abstract class EntityUpdate<
+export abstract class EntityRefresh<
   E extends AbstractEntity,
   M extends AbstractModel
 > {
@@ -24,7 +24,7 @@ export abstract class EntityUpdate<
     public readonly bindable = true
   ) {}
 
-  public abstract update(): void;
+  public abstract refresh(): void;
 }
 
 export abstract class EntityLink<
@@ -83,7 +83,7 @@ export abstract class EntitySync<
 
     const requiredUpdate = Object.keys(finalDirty).length > 0;
 
-    if (requiredUpdate && modelIsEditable(this.model)) {
+    if (requiredUpdate && itIsModelEditable(this.model)) {
       finalDirty['updatedAt'] = new Date();
     }
 

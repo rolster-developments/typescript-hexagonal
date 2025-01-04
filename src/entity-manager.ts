@@ -1,6 +1,6 @@
 import { Optional, fromPromise } from '@rolster/commons';
 import { AbstractEntityDataSource } from './datasource';
-import { EntityLink, EntitySync, EntityUpdate } from './entity';
+import { EntityLink, EntitySync, EntityRefresh } from './entity';
 import {
   AbstractModel,
   DirtyModel,
@@ -10,21 +10,21 @@ import {
 } from './types';
 import { AbstractProcedure } from './procedure';
 
-type ManagerLink = EntityLink<AbstractEntity, AbstractModel>;
-type ManagerUpdate = EntityUpdate<AbstractEntity, AbstractModel>;
-type ManagerSync = EntitySync<AbstractEntity, AbstractModel>;
+type ManagerLinkOptions = EntityLink<AbstractEntity, AbstractModel>;
+type ManagerRefreshOptions = EntityRefresh<AbstractEntity, AbstractModel>;
+type ManagerSyncOptions = EntitySync<AbstractEntity, AbstractModel>;
 type SyncPromise = [AbstractModel, DirtyModel];
 
-function modelIsHidden(model: any): model is ModelHideable {
+function itIsModelHidden(model: any): model is ModelHideable {
   return typeof model === 'object' && 'hidden' in model && 'hiddenAt' in model;
 }
 
 export abstract class AbstractEntityManager implements QueryEntityManager {
-  abstract persist(link: ManagerLink): void;
+  abstract persist(options: ManagerLinkOptions): void;
 
-  abstract update(update: ManagerUpdate): void;
+  abstract refresh(options: ManagerRefreshOptions): void;
 
-  abstract sync(sync: ManagerSync): void;
+  abstract sync(options: ManagerSyncOptions): void;
 
   abstract destroy(entity: AbstractEntity): void;
 
@@ -44,11 +44,11 @@ export abstract class AbstractEntityManager implements QueryEntityManager {
 export class EntityManager implements AbstractEntityManager {
   private relations: Map<string, AbstractModel>;
 
-  private links: ManagerLink[] = [];
+  private links: ManagerLinkOptions[] = [];
 
-  private updates: ManagerUpdate[] = [];
+  private refreshs: ManagerRefreshOptions[] = [];
 
-  private syncs: ManagerSync[] = [];
+  private syncs: ManagerSyncOptions[] = [];
 
   private destroys: AbstractModel[] = [];
 
@@ -60,33 +60,25 @@ export class EntityManager implements AbstractEntityManager {
     this.relations = new Map<string, AbstractModel>();
   }
 
-  public persist(link: ManagerLink): void {
-    this.links.push(link);
+  public persist(options: ManagerLinkOptions): void {
+    this.links.push(options);
   }
 
-  public update(update: ManagerUpdate): void {
-    const { bindable, entity, model } = update;
+  public refresh(options: ManagerRefreshOptions): void {
+    options.bindable && this.relation(options.entity, options.model);
 
-    if (bindable) {
-      this.relation(entity, model);
-    }
-
-    this.updates.push(update);
+    this.refreshs.push(options);
   }
 
-  public sync(sync: ManagerSync): void {
-    const { bindable, entity, model } = sync;
+  public sync(options: ManagerSyncOptions): void {
+    options.bindable && this.relation(options.entity, options.model);
 
-    if (bindable) {
-      this.relation(entity, model);
-    }
-
-    this.syncs.push(sync);
+    this.syncs.push(options);
   }
 
   public destroy(entity: AbstractEntity): void {
     this.select(entity).present((model) => {
-      modelIsHidden(model)
+      itIsModelHidden(model)
         ? this.hiddens.push(model)
         : this.destroys.push(model);
     });
@@ -106,7 +98,9 @@ export class EntityManager implements AbstractEntityManager {
     return entity;
   }
 
-  public select<M extends AbstractModel>({ uuid }: AbstractEntity): Optional<M> {
+  public select<M extends AbstractModel>({
+    uuid
+  }: AbstractEntity): Optional<M> {
     return Optional.build(
       this.relations.has(uuid) ? (this.relations.get(uuid) as M) : undefined
     );
@@ -114,7 +108,7 @@ export class EntityManager implements AbstractEntityManager {
 
   public async flush(): Promise<void> {
     await this.persistAll();
-    await this.updateAll();
+    await this.refreshAll();
     await this.syncAll();
     await this.hiddenAll();
     await this.destroyAll();
@@ -127,7 +121,7 @@ export class EntityManager implements AbstractEntityManager {
     this.relations.clear();
 
     this.links = [];
-    this.updates = [];
+    this.refreshs = [];
     this.syncs = [];
     this.destroys = [];
     this.hiddens = [];
@@ -152,50 +146,44 @@ export class EntityManager implements AbstractEntityManager {
     );
   }
 
-  private updateAll(): Promise<void[]> {
-    const { source, updates } = this;
-
-    return Promise.all(updates.map(({ model }) => source.update(model)));
+  private refreshAll(): Promise<void[]> {
+    return Promise.all(
+      this.refreshs.map(({ model }) => this.source.refresh(model))
+    );
   }
 
   private syncAll(): Promise<void[]> {
-    const { destroys, source, syncs } = this;
-
     return Promise.all(
-      syncs
-        .filter(({ model }) => !destroys.includes(model))
+      this.syncs
+        .filter(({ model }) => !this.destroys.includes(model))
         .reduce((syncs: SyncPromise[], sync) => {
           const dirty = sync.verify();
 
-          if (dirty) {
-            const { model } = sync;
-
-            syncs.push([model, dirty]);
-          }
+          dirty && syncs.push([sync.model, dirty]);
 
           return syncs;
         }, [])
-        .map(([model, dirty]) => source.update(model, dirty))
+        .map(([model, dirty]) => {
+          return this.source.refresh(model, dirty);
+        })
     );
   }
 
   private destroyAll(): Promise<void[]> {
-    const { destroys, source } = this;
-
-    return Promise.all(destroys.map((destroy) => source.delete(destroy)));
+    return Promise.all(
+      this.destroys.map((destroy) => this.source.delete(destroy))
+    );
   }
 
   private hiddenAll(): Promise<void[]> {
-    const { hiddens, source } = this;
-
-    return Promise.all(hiddens.map((hidden) => source.hidden(hidden)));
+    return Promise.all(
+      this.hiddens.map((hidden) => this.source.hidden(hidden))
+    );
   }
 
   private procedureAll(): Promise<void[]> {
-    const { procedures, source } = this;
-
     return Promise.all(
-      procedures.map((procedure) => source.procedure(procedure))
+      this.procedures.map((procedure) => this.source.procedure(procedure))
     );
   }
 }
